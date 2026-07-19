@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulator Mesin Turing — Penjumlahan Unary</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #12151b;
+    --bg-raised: #191d25;
+    --bg-tape: #1d222b;
+    --ink: #e9e7df;
+    --ink-dim: #9aa0ab;
+    --line: #2a303c;
+    --amber: #f2b544;
+    --amber-dim: #6b5326;
+    --teal: #5fd8c9;
+    --red: #ff6f61;
+    --blank-glyph: #454c58;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 15% -10%, #1b2028 0%, transparent 60%),
+      var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:980px; margin:0 auto; padding:56px 24px 96px;}
+
+  /* ---------- Hero ---------- */
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--teal);
+    display:flex; align-items:center; gap:10px;
+    margin-bottom:18px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:22px; height:1px; background:var(--teal); display:inline-block;
+  }
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:clamp(34px, 5vw, 54px);
+    line-height:1.06;
+    margin:0 0 20px;
+    letter-spacing:-.01em;
+  }
+  h1 em{
+    font-style:italic;
+    font-weight:400;
+    color:var(--amber);
+  }
+  .lede{
+    font-size:17px;
+    color:var(--ink-dim);
+    max-width:640px;
+    margin:0 0 40px;
+  }
+  .lede b{color:var(--ink); font-weight:600;}
+
+  .tuple-strip{
+    display:flex; flex-wrap:wrap; gap:8px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    margin-bottom:56px;
+  }
+  .tuple-chip{
+    background:var(--bg-raised);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:6px 11px;
+    color:var(--ink-dim);
+  }
+  .tuple-chip b{color:var(--amber); font-weight:600;}
+
+  /* ---------- Section shell ---------- */
+  section{margin-bottom:52px;}
+  .section-head{
+    display:flex; align-items:baseline; gap:12px;
+    margin-bottom:18px;
+    border-bottom:1px solid var(--line);
+    padding-bottom:12px;
+  }
+  .section-num{
+    font-family:'IBM Plex Mono', monospace;
+    color:var(--amber-dim);
+    font-size:13px;
+  }
+  .section-title{
+    font-family:'Fraunces', serif;
+    font-size:22px;
+    font-weight:600;
+    margin:0;
+  }
+
+  /* ---------- Input panel ---------- */
+  .panel{
+    background:var(--bg-raised);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:24px;
+  }
+  .input-row{
+    display:flex; align-items:flex-end; gap:28px; flex-wrap:wrap;
+  }
+  .num-field label{
+    display:block;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    color:var(--ink-dim);
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    margin-bottom:8px;
+  }
+  .stepper{
+    display:flex; align-items:center;
+    background:var(--bg-tape);
+    border:1px solid var(--line);
+    border-radius:8px;
+    overflow:hidden;
+  }
+  .stepper button{
+    width:36px; height:40px;
+    background:transparent; border:none;
+    color:var(--ink); font-size:17px; cursor:pointer;
+  }
+  .stepper button:hover{background:var(--line);}
+  .stepper input{
+    width:52px; text-align:center;
+    background:transparent; border:none; outline:none;
+    color:var(--amber); font-family:'IBM Plex Mono', monospace;
+    font-size:17px; font-weight:600;
+  }
+  .plus-sign{font-family:'Fraunces',serif; font-size:26px; color:var(--ink-dim); padding-bottom:8px;}
+  .build-btn{
+    margin-left:auto;
+    background:var(--amber);
+    color:#1a1305;
+    border:none; border-radius:8px;
+    padding:12px 22px;
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:600; font-size:13.5px;
+    letter-spacing:.03em;
+    cursor:pointer;
+    transition:transform .12s ease, filter .12s ease;
+  }
+  .build-btn:hover{filter:brightness(1.08); transform:translateY(-1px);}
+  .preview-string{
+    margin-top:16px;
+    font-family:'IBM Plex Mono', monospace;
+    color:var(--ink-dim);
+    font-size:13.5px;
+  }
+  .preview-string span{color:var(--teal);}
+
+  /* ---------- Tape ---------- */
+  .tape-stage{
+    background:var(--bg-tape);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:32px 20px 24px;
+    overflow-x:auto;
+    position:relative;
+  }
+  .status-row{
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:22px; flex-wrap:wrap; gap:12px;
+  }
+  .state-badge{
+    display:inline-flex; align-items:center; gap:9px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+  }
+  .state-dot{
+    width:9px; height:9px; border-radius:50%;
+    background:var(--teal);
+    box-shadow:0 0 0 4px rgba(95,216,201,.15);
+  }
+  .state-dot.halt{background:var(--amber); box-shadow:0 0 0 4px rgba(242,181,68,.18);}
+  .state-dot.reject{background:var(--red); box-shadow:0 0 0 4px rgba(255,111,97,.18);}
+  .state-name{color:var(--ink); font-weight:600;}
+  .step-count{color:var(--ink-dim); font-family:'IBM Plex Mono', monospace; font-size:13px;}
+
+  .tape-track{
+    display:flex; justify-content:center;
+    min-width:max-content;
+    margin:0 auto;
+    padding:0 10px 30px;
+  }
+  .cell{
+    width:44px; height:44px;
+    display:flex; align-items:center; justify-content:center;
+    border:1px solid var(--line);
+    border-right:none;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:18px; font-weight:600;
+    color:var(--ink);
+    position:relative;
+    flex-shrink:0;
+    background:var(--bg-raised);
+    transition:background .18s ease, color .18s ease, transform .18s ease;
+  }
+  .cell:last-child{border-right:1px solid var(--line);}
+  .cell.blank{color:var(--blank-glyph); font-weight:400;}
+  .cell.head{
+    background:var(--amber);
+    color:#1a1305;
+    transform:translateY(-4px);
+    box-shadow:0 6px 14px rgba(242,181,68,.25);
+    z-index:2;
+  }
+  .cell.written{
+    animation:flash .5s ease;
+  }
+  @keyframes flash{
+    0%{background:var(--teal); color:#0c1a18;}
+    100%{}
+  }
+  .head-pointer{
+    position:absolute;
+    top:-22px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    color:var(--amber);
+    transform:translateX(-50%);
+    white-space:nowrap;
+  }
+
+  /* ---------- Controls ---------- */
+  .controls{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    margin-top:20px;
+  }
+  .ctrl-btn{
+    background:var(--bg-raised);
+    border:1px solid var(--line);
+    color:var(--ink);
+    border-radius:8px;
+    padding:10px 16px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    cursor:pointer;
+    display:flex; align-items:center; gap:8px;
+    transition:background .12s ease, border-color .12s ease;
+  }
+  .ctrl-btn:hover{border-color:var(--teal);}
+  .ctrl-btn.primary{
+    background:var(--teal); color:#0b1f1c; border-color:var(--teal); font-weight:600;
+  }
+  .ctrl-btn:disabled{opacity:.4; cursor:not-allowed;}
+  .speed-wrap{
+    display:flex; align-items:center; gap:8px;
+    margin-left:auto;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px; color:var(--ink-dim);
+  }
+  input[type=range]{accent-color:var(--teal);}
+
+  .result-banner{
+    margin-top:18px;
+    padding:14px 18px;
+    border-radius:8px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13.5px;
+    display:none;
+  }
+  .result-banner.show{display:block;}
+  .result-banner.ok{background:rgba(95,216,201,.1); border:1px solid rgba(95,216,201,.35); color:var(--teal);}
+
+  /* ---------- Log + table ---------- */
+  .two-col{display:grid; grid-template-columns:1.3fr 1fr; gap:24px;}
+  @media(max-width:760px){.two-col{grid-template-columns:1fr;}}
+
+  .log-box{
+    background:var(--bg-raised);
+    border:1px solid var(--line);
+    border-radius:12px;
+    max-height:320px;
+    overflow-y:auto;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px;
+  }
+  .log-box table{width:100%; border-collapse:collapse;}
+  .log-box th{
+    position:sticky; top:0;
+    background:var(--bg-raised);
+    text-align:left;
+    color:var(--ink-dim);
+    font-weight:500;
+    padding:10px 12px;
+    border-bottom:1px solid var(--line);
+    text-transform:uppercase;
+    font-size:10.5px;
+    letter-spacing:.06em;
+  }
+  .log-box td{
+    padding:8px 12px;
+    border-bottom:1px solid var(--line);
+    color:var(--ink-dim);
+  }
+  .log-box tr:last-child td{color:var(--ink);}
+  .log-box tr.current td{background:rgba(242,181,68,.08); color:var(--ink);}
+
+  .delta-table{
+    background:var(--bg-raised);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:18px 20px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px;
+  }
+  .delta-table .row{
+    display:grid;
+    grid-template-columns:auto 1fr;
+    gap:14px;
+    padding:8px 0;
+    border-bottom:1px dashed var(--line);
+    align-items:center;
+  }
+  .delta-table .row:last-child{border-bottom:none;}
+  .delta-lhs{color:var(--teal);}
+  .delta-rhs{color:var(--ink-dim);}
+  .delta-rhs b{color:var(--amber); font-weight:600;}
+
+  /* ---------- Explanation ---------- */
+  .explain-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
+  @media(max-width:760px){.explain-grid{grid-template-columns:1fr;}}
+  .explain-card{
+    background:var(--bg-raised);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:18px 20px;
+  }
+  .explain-card .k{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px; text-transform:uppercase; letter-spacing:.08em;
+    color:var(--amber);
+    margin-bottom:8px;
+  }
+  .explain-card p{margin:0; font-size:14px; color:var(--ink-dim);}
+
+  footer{
+    margin-top:70px;
+    padding-top:20px;
+    border-top:1px solid var(--line);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    color:var(--ink-dim);
+    display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important; transition:none !important;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="eyebrow">Teori Bahasa &amp; Otomata — Studi Kasus</div>
+  <h1>Mesin Turing untuk<br><em>Penjumlahan Bilangan Unary</em></h1>
+  <p class="lede">
+    Aplikasi ini mensimulasikan sebuah <b>Mesin Turing deterministik</b> yang menjumlahkan dua bilangan
+    dalam notasi unary (tally, deretan angka <b>1</b>) yang dipisahkan simbol <b>+</b>.
+    Setiap langkah — pembacaan simbol, penulisan, pergerakan kepala baca/tulis, dan perpindahan status —
+    ditampilkan secara eksplisit di atas pita.
+  </p>
+
+  <div class="tuple-strip" id="tupleStrip"></div>
+
+  <!-- INPUT -->
+  <section>
+    <div class="section-head">
+      <span class="section-num">01</span>
+      <h2 class="section-title">Susun Pita Awal</h2>
+    </div>
+    <div class="panel">
+      <div class="input-row">
+        <div class="num-field">
+          <label>Bilangan A</label>
+          <div class="stepper">
+            <button onclick="adjust('a',-1)">−</button>
+            <input id="numA" type="text" value="3" readonly>
+            <button onclick="adjust('a',1)">+</button>
+          </div>
+        </div>
+        <div class="plus-sign">+</div>
+        <div class="num-field">
+          <label>Bilangan B</label>
+          <div class="stepper">
+            <button onclick="adjust('b',-1)">−</button>
+            <input id="numB" type="text" value="2" readonly>
+            <button onclick="adjust('b',1)">+</button>
+          </div>
+        </div>
+        <button class="build-btn" onclick="buildTape()">Bangun Pita &amp; Reset</button>
+      </div>
+      <div class="preview-string">Input pada pita: <span id="previewStr">111+11</span> &nbsp;→&nbsp; hasil yang diharapkan: <span id="previewResult">11111 (5)</span></div>
+    </div>
+  </section>
+
+  <!-- TAPE -->
+  <section>
+    <div class="section-head">
+      <span class="section-num">02</span>
+      <h2 class="section-title">Eksekusi di Atas Pita</h2>
+    </div>
+
+    <div class="tape-stage">
+      <div class="status-row">
+        <div class="state-badge">
+          <span class="state-dot" id="stateDot"></span>
+          <span>Status saat ini:</span>
+          <span class="state-name" id="stateName">q0</span>
+        </div>
+        <div class="step-count" id="stepCount">Langkah ke-0</div>
+      </div>
+
+      <div class="tape-track" id="tapeTrack"></div>
+
+      <div class="controls">
+        <button class="ctrl-btn primary" id="playBtn" onclick="togglePlay()">▶ Jalankan</button>
+        <button class="ctrl-btn" onclick="stepOnce()">⏭ Satu Langkah</button>
+        <button class="ctrl-btn" onclick="resetRun()">↺ Ulangi</button>
+        <div class="speed-wrap">
+          Kecepatan
+          <input type="range" min="80" max="900" value="380" id="speedRange" oninput="speedVal.textContent=this.value+'ms'">
+          <span id="speedVal">380ms</span>
+        </div>
+      </div>
+
+      <div class="result-banner ok" id="resultBanner"></div>
+    </div>
+  </section>
+
+  <!-- LOG + DELTA -->
+  <section>
+    <div class="section-head">
+      <span class="section-num">03</span>
+      <h2 class="section-title">Jejak Eksekusi &amp; Fungsi Transisi</h2>
+    </div>
+    <div class="two-col">
+      <div class="log-box">
+        <table>
+          <thead><tr><th>#</th><th>Status</th><th>Baca</th><th>Tulis</th><th>Gerak</th><th>Status Baru</th></tr></thead>
+          <tbody id="logBody"></tbody>
+        </table>
+      </div>
+      <div class="delta-table" id="deltaTable"></div>
+    </div>
+  </section>
+
+  <!-- EXPLANATION -->
+  <section>
+    <div class="section-head">
+      <span class="section-num">04</span>
+      <h2 class="section-title">Definisi Formal (7-Tuple)</h2>
+    </div>
+    <div class="explain-grid" id="explainGrid"></div>
+  </section>
+
+  <footer>
+    <span>Simulator Mesin Turing · Notasi Unary · Deterministik, Single-Tape</span>
+    <span>Dibuat untuk tugas Teori Bahasa &amp; Otomata</span>
+  </footer>
+</div>
+
+<script>
+/* ---------------- Turing Machine Definition ---------------- */
+// States: q0 (cari '+'), q1 (cari akhir blok kedua), q2 (hapus 1 terakhir), qA (accept)
+const BLANK = '␣';
+const transitions = {
+  q0: { '1': { write:'1', move:1,  next:'q0' }, '+': { write:'1', move:1,  next:'q1' } },
+  q1: { '1': { write:'1', move:1,  next:'q1' }, [BLANK]: { write:BLANK, move:-1, next:'q2' } },
+  q2: { '1': { write:BLANK, move:-1, next:'qA' } }
+};
+const ACCEPT = 'qA';
+
+const stateLabel = {
+  q0: 'q0 — mencari simbol "+"',
+  q1: 'q1 — menelusuri blok kedua',
+  q2: 'q2 — menghapus satu tally',
+  qA: 'qA — diterima (HALT)'
+};
+
+let numA = 3, numB = 2;
+let tape = [], headPos = 0, currentState = 'q0', halted = false;
+let history = []; // {tape snapshot, headPos, state, step}
+let logs = [];
+let playTimer = null;
+
+function makeInputString(a,b){ return '1'.repeat(a) + '+' + '1'.repeat(b); }
+
+function adjust(which, delta){
+  if(which==='a'){ numA = Math.max(0, Math.min(9, numA+delta)); document.getElementById('numA').value = numA; }
+  else { numB = Math.max(0, Math.min(9, numB+delta)); document.getElementById('numB').value = numB; }
+  updatePreview();
+}
+
+function updatePreview(){
+  const s = makeInputString(numA,numB);
+  document.getElementById('previewStr').textContent = s || '(kosong)';
+  document.getElementById('previewResult').textContent = '1'.repeat(numA+numB) + ' (' + (numA+numB) + ')';
+}
+
+function buildTape(){
+  stopPlay();
+  const input = makeInputString(numA,numB).split('');
+  const padding = 3;
+  tape = Array(padding).fill(BLANK).concat(input, Array(padding+4).fill(BLANK));
+  headPos = padding;
+  currentState = 'q0';
+  halted = false;
+  history = [snapshot(0,null,null,null,null)];
+  logs = [];
+  document.getElementById('resultBanner').classList.remove('show');
+  renderAll(null);
+}
+
+function snapshot(step, read, write, move, next){
+  return { tape: tape.slice(), headPos, state: currentState, step, read, write, move, next };
+}
+
+function stepOnce(){
+  if(halted) return;
+  const table = transitions[currentState];
+  const symbol = tape[headPos];
+  const rule = table ? table[symbol] : null;
+
+  if(!rule){
+    halted = true;
+    const isAccept = currentState === ACCEPT;
+    showResult(isAccept);
+    renderAll(null);
+    return;
+  }
+
+  const step = history.length;
+  tape[headPos] = rule.write;
+  const writtenAt = headPos;
+  headPos += rule.move;
+  const prevState = currentState;
+  currentState = rule.next;
+
+  logs.push({ n: step, state: prevState, read: symbol, write: rule.write, move: rule.move>0?'→ kanan':'← kiri', next: currentState });
+  history.push(snapshot(step, symbol, rule.write, rule.move, currentState));
+
+  if(currentState === ACCEPT){
+    halted = true;
+    renderAll(writtenAt);
+    showResult(true);
+    return;
+  }
+  renderAll(writtenAt);
+}
+
+function showResult(isAccept){
+  const banner = document.getElementById('resultBanner');
+  banner.classList.add('show');
+  if(isAccept){
+    const ones = tape.filter(c=>c==='1').length;
+    banner.textContent = `✓ Diterima. Pita akhir merepresentasikan ${ones} (yaitu ${numA} + ${numB} = ${ones}) dalam notasi unary.`;
+  } else {
+    banner.textContent = '✕ Tidak ada transisi lanjutan yang valid dari status ini — mesin berhenti (reject).';
+  }
+}
+
+function resetRun(){
+  buildTape();
+}
+
+function renderAll(justWrittenIndex){
+  // status
+  document.getElementById('stateName').textContent = stateLabel[currentState] || currentState;
+  document.getElementById('stepCount').textContent = `Langkah ke-${logs.length}`;
+  const dot = document.getElementById('stateDot');
+  dot.className = 'state-dot' + (halted ? (currentState===ACCEPT ? ' halt' : ' reject') : '');
+
+  // tape
+  const track = document.getElementById('tapeTrack');
+  track.innerHTML = '';
+  tape.forEach((sym, i)=>{
+    const cell = document.createElement('div');
+    cell.className = 'cell' + (sym===BLANK ? ' blank' : '') + (i===headPos ? ' head' : '') + (i===justWrittenIndex ? ' written' : '');
+    cell.textContent = sym;
+    if(i===headPos){
+      const ptr = document.createElement('div');
+      ptr.className = 'head-pointer';
+      ptr.textContent = '▼ ' + currentState;
+      cell.appendChild(ptr);
+    }
+    track.appendChild(cell);
+  });
+
+  // log
+  const body = document.getElementById('logBody');
+  body.innerHTML = '';
+  logs.forEach((l, idx)=>{
+    const tr = document.createElement('tr');
+    if(idx===logs.length-1) tr.className='current';
+    tr.innerHTML = `<td>${l.n+1}</td><td>${l.state}</td><td>${l.read}</td><td>${l.write}</td><td>${l.move}</td><td>${l.next}</td>`;
+    body.appendChild(tr);
+  });
+  body.parentElement.parentElement.scrollTop = body.parentElement.parentElement.scrollHeight;
+
+  document.getElementById('playBtn').textContent = halted ? '✓ Selesai' : (playTimer ? '⏸ Jeda' : '▶ Jalankan');
+  document.getElementById('playBtn').disabled = halted && !playTimer;
+}
+
+function togglePlay(){
+  if(halted) return;
+  if(playTimer){ stopPlay(); return; }
+  const speed = () => parseInt(document.getElementById('speedRange').value,10);
+  const tick = () => {
+    if(halted){ stopPlay(); return; }
+    stepOnce();
+    if(!halted) playTimer = setTimeout(tick, speed());
+    else stopPlay();
+  };
+  playTimer = setTimeout(tick, speed());
+  document.getElementById('playBtn').textContent = '⏸ Jeda';
+}
+function stopPlay(){
+  clearTimeout(playTimer);
+  playTimer = null;
+  if(!halted) document.getElementById('playBtn').textContent = '▶ Jalankan';
+}
+
+/* ---------------- Static reference panels ---------------- */
+function renderTupleStrip(){
+  const items = [
+    ['Q','{q0, q1, q2, qA}'],
+    ['Σ','{1, +}'],
+    ['Γ','{1, +, ␣}'],
+    ['q0','status awal = q0'],
+    ['qaccept','qA'],
+  ];
+  document.getElementById('tupleStrip').innerHTML = items.map(([k,v])=>
+    `<div class="tuple-chip"><b>${k}</b> = ${v}</div>`).join('');
+}
+
+function renderDeltaTable(){
+  const rows = [
+    ['δ(q0, 1)','= (1, →, q0)  — lewati tally pertama'],
+    ['δ(q0, +)','= (<b>1</b>, →, q1)  — ganti "+" jadi tally, sambungkan blok'],
+    ['δ(q1, 1)','= (1, →, q1)  — lewati tally kedua'],
+    ['δ(q1, ␣)','= (␣, ←, q2)  — ujung pita ditemukan, balik arah'],
+    ['δ(q2, 1)','= (␣, ←, qA)  — hapus satu tally, HALT diterima'],
+  ];
+  document.getElementById('deltaTable').innerHTML = rows.map(([l,r])=>
+    `<div class="row"><span class="delta-lhs">${l}</span><span class="delta-rhs">${r}</span></div>`).join('');
+}
+
+function renderExplain(){
+  const cards = [
+    ['Ide Algoritma','Dua bilangan unary A dan B dipisah "+" (A buah 1, lalu "+", lalu B buah 1). Mesin mengganti "+" dengan "1" sehingga kedua blok tersambung, lalu menghapus satu tally di ujung untuk mengompensasi simbol "+" yang tadinya bukan bagian dari hasil.'],
+    ['Kenapa Ini Otomata Non-Trivial','Berbeda dari DFA yang hanya menerima/menolak string, Mesin Turing di sini benar-benar menuliskan hasil komputasi (A+B) ke pita — menunjukkan sifat Turing-complete: mampu menghitung, bukan sekadar mengenali.'],
+    ['Kompleksitas','Berjalan dalam O(n) langkah terhadap panjang input (n = A+B+1), dengan satu kali lintasan ke kanan dan satu langkah balik ke kiri — mendemonstrasikan model pita tunggal, deterministik, satu arah baca/tulis per langkah.'],
+  ];
+  document.getElementById('explainGrid').innerHTML = cards.map(([k,p])=>
+    `<div class="explain-card"><div class="k">${k}</div><p>${p}</p></div>`).join('');
+}
+
+/* ---------------- Init ---------------- */
+renderTupleStrip();
+renderDeltaTable();
+renderExplain();
+updatePreview();
+buildTape();
+</script>
+</body>
+</html>
